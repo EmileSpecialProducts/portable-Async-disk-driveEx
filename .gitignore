@@ -76,3 +76,4 @@ settings.json
 .travis.yml
 
 Privite
+*.bin
