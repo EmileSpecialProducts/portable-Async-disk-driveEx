@@ -6,6 +6,10 @@
 </p>
 # portable-Async-disk-drive
 
+<p align="center">
+<img alt="Under-Construction Logo" src="SdRoot/Under-Construction.png" width="256">
+</p>
+
 This is under construction!!!!!
 
 
