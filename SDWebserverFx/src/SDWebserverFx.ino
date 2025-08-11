@@ -1046,33 +1046,23 @@ server.on("/edit", MY_HTTP_POST,
           }, 
         [](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final)
           {
-            //DBG_OUTPUT_PORT.printf("Upload[%s]: start=%u, len=%u, final=%d\n", filename.c_str(), index, len, final);
-            if (!index) {
-              uploadFile = sd.open("/"+ filename, O_RDWR  | O_CREAT);
+            typedef struct Uploadf {int count;file_t uploadFile;} Uploadf;
+             if (!index) {
+              request->_tempObject = malloc(sizeof(Uploadf));
+              ((Uploadf *)(request->_tempObject))->count=1 ;
+              ((Uploadf *)(request->_tempObject))->uploadFile =sd.open("/"+ filename, O_RDWR  | O_CREAT);
             }
-            if (len) uploadFile.write(data, len);
+            if (len) {
+              ((Uploadf *)(request->_tempObject))->count++;
+              //DBG_OUTPUT_PORT.printf("%x Count\n",((Uploadf *)(request->_tempObject))->count);
+              ((Uploadf *)(request->_tempObject))->uploadFile.write(data, len); 
+            }
             if (final) {
-              uploadFile.close();
-            }
-
-            /* if (!index) {
-              request->_tempObject = malloc(sizeof(file_t));
-              request->_tempObject = (void *)sd.open("/"+ filename, O_RDWR  | O_CREAT);
-              
-            }
-            if (len) ((file_t *)(request->_tempObject))->write(data, len);
-            if (final) {
-              ((file_t *)(request->_tempObject))->close();
-            }
-            */  
-            // EVDL
-            //if (!index) {
-            //request->_tempFile = (File) sd.open("/"+ filename, O_RDWR  | O_CREAT);
-            //}
-            //if (len) ((file_t)(request->_tempFile)).write(data, len);
-            //if (final) {
-            //((file_t)(request->_tempFile)).close();
-            //} 
+              ((Uploadf *)(request->_tempObject))->uploadFile.close();
+              DBG_OUTPUT_PORT.printf("final Uploaded %s in %d blocks ",filename.c_str(),((Uploadf *)(request->_tempObject))->count);
+              free(request->_tempObject); // this free is also done in the AsyncWebServerRequest destructor
+              request->_tempObject=NULL;
+             }
           }
     );
     server.on("/", MY_HTTP_GET, [](AsyncWebServerRequest *request)
@@ -1104,6 +1094,8 @@ server.on("/edit", MY_HTTP_POST,
                 dataType = "image/gif";
               else if (request->url().endsWith(".jpg"))
                 dataType = "image/jpeg";
+              else if (request->url().endsWith(".bmp"))
+                dataType = "image/bmp";
               else if (request->url().endsWith(".ico"))
                 dataType = "image/x-icon";
               else if (request->url().endsWith(".xml"))
@@ -1129,7 +1121,8 @@ server.on("/edit", MY_HTTP_POST,
             if (request->url() == "/index.html")
                     reply(request, 200, "text/html", Index_html, sizeof(Index_html) - 1);
             else if (request->url() == "/error404.html")
-                    reply(request, 404, "text/html", error404_html, sizeof(error404_html) - 1);else 
+                    reply(request, 404, "text/html", error404_html, sizeof(error404_html) - 1);
+            else 
                 request->redirect("/error404.html");
             }
         }
@@ -1141,25 +1134,9 @@ server.on("/edit", MY_HTTP_POST,
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*"); 
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, HEAD");
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "content-type");
-  //SyncServer.begin();
   server.begin();  
   DBG_OUTPUT_PORT.println("HTTP server started");
-/*
-  server.on("/",[](){
-      server.sendHeader("Location", "/index.html",true); //Redirect to our html web page 
-      server.send(302, "text/plane","");
-  });
-  server.on("/list", HTTP_GET, printDirectory);
-  server.on("/edit", HTTP_DELETE, handleDelete);
-  server.on("/edit", HTTP_PUT, handleCreate);
-  server.on("/edit", HTTP_POST, []()
-      { returnOK(); },
-      handleFileUpload);
-  server.onNotFound(handleNotFound);
 
-  server.begin();
-  DBG_OUTPUT_PORT.println("HTTP server started");
-*/
 #if defined(ESP8266) || defined(CONFIG_IDF_TARGET_ESP32)
   SDmaxSpeed = 16;
   hasSD = false;
