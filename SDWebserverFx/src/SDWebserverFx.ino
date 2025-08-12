@@ -43,8 +43,18 @@
 #endif
 
 #include <NTPClient.h>   //  https://github.com/arduino-libraries/NTPClient
-#include <WiFiManager.h> // WifiManager by tzapu  https://github.com/tzapu/WiFiManager
+
 #include <ArduinoOTA.h>  // ArduinoOTA by Arduino, Juraj  https://github.com/JAndrassy/ArduinoOTA
+#if defined(ESP8266)
+// https://github.com/tzapu/WiFiManager/issues/1530
+#define WEBSERVER_H
+#endif 
+
+#define USEWIFIMANAGER
+
+#ifdef USEWIFIMANAGER
+#include <WiFiManager.h> // WifiManager by tzapu  https://github.com/tzapu/WiFiManager
+#endif
 
 #include <ESPAsyncWebServer.h> // https://github.com/ESP32Async/ESPAsyncWebServer
 #include <SPI.h>
@@ -71,7 +81,7 @@ typedef enum {
  // USBSerial Serial Serial1 Serial2
 
 #if defined(ESP8266)
-#include "SDFS.h" 
+//#include "SDFS.h" 
 #warning "ESP8266 Pins You can not change them"
 
 /*
@@ -149,15 +159,15 @@ https://github.com/Xinyuan-LilyGO/ESP32_S2
 // SS=10; MOSI=15; MISO=16; SCK=17
 
 // The SPI2 (FSPI) default pins are
-#define SD_PIN_SCK 12
-#define SD_PIN_MOSI 11
-#define SD_PIN_MISO 13
-#define SD_PIN_CS 10
+//#define SD_PIN_SCK 12
+//#define SD_PIN_MOSI 11
+//#define SD_PIN_MISO 13
+//#define SD_PIN_CS 10
 
-//#define SD_PIN_SCK 9
-//#define SD_PIN_MOSI 10
-//#define SD_PIN_MISO 11
-//#define SD_PIN_CS 8
+#define SD_PIN_SCK 9
+#define SD_PIN_MOSI 10
+#define SD_PIN_MISO 11
+#define SD_PIN_CS 8
 
 #define BOOTPIN 0
 
@@ -591,31 +601,6 @@ void setup(void)
   
 server.on("/list", MY_HTTP_GET, [](AsyncWebServerRequest *request)
     {
-#if defined(ESP8266)
-        int cnt = 0;
-        bool foundfile;
-        if (!request->hasArg("dir"))
-          return request->send(500, "text/plain", "BAD ARGS\r\n");
-        String path = request->arg("dir");
-        String output="[";
-        DBG_OUTPUT_PORT.println(" DIR: ");
-        request->send(200, "text/json", "");
-        Dir dir = SDFS.openDir(path);
-        foundfile = dir.next();
-        while (foundfile)
-        {
-          output += String(cnt++>0?",":"")
-          + "{\"name\":\"" + String(dir.fileName())+"\"" 
-          + ",\"type\":\"" + String((dir.isDirectory()) ? "dir" : "file")+"\"" 
-          + String((dir.isDirectory()) ?"":(",\"size\":\"" + String(dir.fileSize())+"\"")) 
-          + "}";
-          foundfile = dir.next();
-          if (!foundfile)
-            output += ']';
-        }
-        DBG_OUTPUT_PORT.println("Dir: " + output);
-        request->send(200, "text/json", output);
-#else
         if (!request->hasArg("dir"))
           return request->send(500, "text/plain", "BAD ARGS\r\n"); 
         String path = request->arg("dir");
@@ -645,7 +630,6 @@ server.on("/list", MY_HTTP_GET, [](AsyncWebServerRequest *request)
         output+="]";
         request->send(200, "text/json", output);
         dir.close();
-#endif
       });
       
 server.on("/edit", MY_HTTP_PUT, [](AsyncWebServerRequest *request)
@@ -725,7 +709,7 @@ server.on("/edit", MY_HTTP_POST,
             }
             if (final) {
               ((Uploadf *)(request->_tempObject))->uploadFile.close();
-              DBG_OUTPUT_PORT.printf("final Uploaded %s in %d blocks ",filename.c_str(),((Uploadf *)(request->_tempObject))->count);
+              //DBG_OUTPUT_PORT.printf("final Uploaded %s in %d blocks ",filename.c_str(),((Uploadf *)(request->_tempObject))->count);
               free(request->_tempObject); // this free is also done in the AsyncWebServerRequest destructor
               request->_tempObject=NULL;
              }
@@ -737,16 +721,12 @@ server.on("/edit", MY_HTTP_POST,
     server.onNotFound([](AsyncWebServerRequest *request)
     { 
       struct DownLoadFile {file_t File; size_t index;unsigned long time; };
-      static DownLoadFile DownLoadFiles[5];
-       
+      static DownLoadFile DownLoadFiles[5];       
       DBG_OUTPUT_PORT.printf("url NotFound %s , Method =%s\n", request->url().c_str(), request->methodToString());
       if (request->method() == HTTP_GET)
       {
           if (sd.exists(request->url())) 
           {
-#if defined(ESP8266)
-                request->send(SDFS, request->url(), String(), false);
-#else
             String dataType = "text/plain";
             if (request->url().endsWith(".htm"))        dataType = "text/html";
             else if (request->url().endsWith(".html"))  dataType = "text/html";
@@ -761,8 +741,8 @@ server.on("/edit", MY_HTTP_POST,
             else if (request->url().endsWith(".pdf"))   dataType = "application/pdf";
             else if (request->url().endsWith(".zip"))   dataType = "application/zip";
 
-            // clean up
-            for( int f=0;f<sizeof(DownLoadFiles)/sizeof(DownLoadFiles[0]);f++)
+            // clean up is time out
+            for( int f=0;f<(int )(sizeof(DownLoadFiles)/sizeof(DownLoadFiles[0]));f++)
             {
                 if( DownLoadFiles[f].File && DownLoadFiles[f].File.isOpen() && DownLoadFiles[f].time < millis() )
                 {   DownLoadFiles[f].File.close(); 
@@ -771,7 +751,7 @@ server.on("/edit", MY_HTTP_POST,
                 }  
             }
 
-            for( int f=0;f<sizeof(DownLoadFiles)/sizeof(DownLoadFiles[0]);f++)
+            for( int f=0;f<(int )(sizeof(DownLoadFiles)/sizeof(DownLoadFiles[0]));f++)
               {  
                 if(!DownLoadFiles[f].File.isOpen())
                 {
@@ -786,7 +766,7 @@ server.on("/edit", MY_HTTP_POST,
             {
               int len =0;
               int fileindex=-1;
-              for( int f=0;f<sizeof(DownLoadFiles)/sizeof(DownLoadFiles[0]);f++)
+              for( int f=0;f<(int )(sizeof(DownLoadFiles)/sizeof(DownLoadFiles[0]));f++)
               {
                 if(DownLoadFiles[f].File && DownLoadFiles[f].File.isOpen() && DownLoadFiles[f].index==index )
                 {
@@ -801,8 +781,9 @@ server.on("/edit", MY_HTTP_POST,
               } 
               else
               { 
-              DownLoadFiles[fileindex].time= millis()+3000;
+              
               len=DownLoadFiles[fileindex].File.read(buffer,maxLen);
+              DownLoadFiles[fileindex].time= millis()+3000; // add 3000 ms for the time out of the connection.
               DownLoadFiles[fileindex].index=index+len;
               if( len == 0)  {
                               DownLoadFiles[fileindex].File.close();
@@ -813,7 +794,6 @@ server.on("/edit", MY_HTTP_POST,
               return len;
             });
             request->send(response);
-#endif                
             }
             else
             {
@@ -976,8 +956,8 @@ server.on("/edit", MY_HTTP_POST,
   message += " " + reset_reason(rtc_get_reset_reason(0));  
   message += " esp_idf_version: " + String(esp_get_idf_version());
   message += " arduino_version: " + String(ESP_ARDUINO_VERSION_MAJOR) + "." + String(ESP_ARDUINO_VERSION_MINOR) + "." + String(ESP_ARDUINO_VERSION_PATCH);
-  message += " Build Date: " + String(__DATE__ " " __TIME__);
 #endif
+  message += " Build Date: " + String(__DATE__ " " __TIME__);
   DBG_OUTPUT_PORT.print(message);
   Log(message);
 }
