@@ -77,3 +77,4 @@ settings.json
 
 Privite
 *.bin
+.ino.cpp
