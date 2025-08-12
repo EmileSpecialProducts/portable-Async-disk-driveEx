@@ -1,8 +1,8 @@
 {
   "name": "ESP-SDEX-Web-Server",
-  "version": "2025.07.28",
+  "version": "2025.08.12",
   "home_assistant_domain": "ESP-SDEX-Web-Server",
-  "funding_url": "https://github.com/EmileSpecialProducts/portable-disk-driveEx",
+  "funding_url": "https://github.com/EmileSpecialProducts/portable-Async-disk-driveEx",
   "builds": [
     {
       "chipFamily": "ESP8266",
