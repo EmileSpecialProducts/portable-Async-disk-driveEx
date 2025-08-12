@@ -7,11 +7,8 @@
 # portable-Async-disk-drive
 
 <p align="center">
-<img alt="Under-Construction Logo" src="SdRoot/Under-Construction.png" width="256">
+<img alt="Under-Construction Logo" src="SdRoot/Under-Construction.png" width="25">
 </p>
-
-This is under construction!!!!!
-
 
 This is the SD-Card example for esp-arduino 8266/ESP32/ESP32S2/ESP32S3/ESP32C3/ESP32C6. 
 It will support FatEx >32GB that is based on the greiman/SdFat.
@@ -19,6 +16,7 @@ And is supported by arduino 3.2.1
 It also has OTA software update support, and a Wifi manager.
 Wifi login can be reseted by pressing the Boot button for 5 Seconds 
 Platformio is also supported.
+
 You can see this Project in Action <a href="https://www.youtube.com/watch?v=zJP3Ie3nE7c&t=5s
 "> video https://youtu.be/4TL-1kFhhLU?si=0_FFTyLoHQfMEpkf</a>
 
@@ -27,7 +25,7 @@ It is based on the work that
 has done see his video <a href="https://www.youtube.com/watch?v=zJP3Ie3nE7c&t=5s
 "> video</a>
 
-You can program the ESP by using this <a href="https://emilespecialproducts.github.io/ESP-SD-FatEx-Web-Server/upload.html">link</a>
+You can program the ESP by using this <a href="https://emilespecialproducts.github.io/ESP-SD-Async-FatEx-Web-Server/upload.html">link</a>
 <h3>Devices ESP-32 (Classic/S2/S3/C3/C6) / ESP8266</h3>
             <p>
               SD card Server software to the ESP-32 (Clasic/S2/S3/C3/C6) / ESP8266 device.
