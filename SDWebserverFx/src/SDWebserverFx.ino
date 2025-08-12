@@ -159,15 +159,15 @@ https://github.com/Xinyuan-LilyGO/ESP32_S2
 // SS=10; MOSI=15; MISO=16; SCK=17
 
 // The SPI2 (FSPI) default pins are
-//#define SD_PIN_SCK 12
-//#define SD_PIN_MOSI 11
-//#define SD_PIN_MISO 13
-//#define SD_PIN_CS 10
+#define SD_PIN_SCK 12
+#define SD_PIN_MOSI 11
+#define SD_PIN_MISO 13
+#define SD_PIN_CS 10
 
-#define SD_PIN_SCK 9
-#define SD_PIN_MOSI 10
-#define SD_PIN_MISO 11
-#define SD_PIN_CS 8
+//#define SD_PIN_SCK 9
+//#define SD_PIN_MOSI 10
+//#define SD_PIN_MISO 11
+//#define SD_PIN_CS 8
 
 #define BOOTPIN 0
 
@@ -197,15 +197,15 @@ https://github.com/Xinyuan-LilyGO/ESP32_S2
 #elif defined(CONFIG_IDF_TARGET_ESP32C6)
 // https://github.com/wuxx/nanoESP32-C6
 
-//#define SD_PIN_SCK 21
-//#define SD_PIN_MOSI 19
-//#define SD_PIN_MISO 20
-//#define SD_PIN_CS 18
-
-#define SD_PIN_SCK 19
-#define SD_PIN_MOSI 18
+#define SD_PIN_SCK 21
+#define SD_PIN_MOSI 19
 #define SD_PIN_MISO 20
-#define SD_PIN_CS 23
+#define SD_PIN_CS 18
+
+//#define SD_PIN_SCK 19
+//#define SD_PIN_MOSI 18
+//#define SD_PIN_MISO 20
+//#define SD_PIN_CS 23
 
 #define PIN_NEOPIXEL 8
 #define BOOTPIN 9
