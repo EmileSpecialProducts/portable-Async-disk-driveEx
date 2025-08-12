@@ -728,18 +728,20 @@ server.on("/edit", MY_HTTP_POST,
           if (sd.exists(request->url())) 
           {
             String dataType = "text/plain";
-            if (request->url().endsWith(".htm"))        dataType = "text/html";
-            else if (request->url().endsWith(".html"))  dataType = "text/html";
-            else if (request->url().endsWith(".css"))   dataType = "text/css";
-            else if (request->url().endsWith(".js"))    dataType = "application/javascript";
-            else if (request->url().endsWith(".png"))   dataType = "image/png";
-            else if (request->url().endsWith(".gif"))   dataType = "image/gif";
-            else if (request->url().endsWith(".jpg"))   dataType = "image/jpeg";
-            else if (request->url().endsWith(".bmp"))   dataType = "image/bmp";
-            else if (request->url().endsWith(".ico"))   dataType = "image/x-icon";
-            else if (request->url().endsWith(".xml"))   dataType = "text/xml";
-            else if (request->url().endsWith(".pdf"))   dataType = "application/pdf";
-            else if (request->url().endsWith(".zip"))   dataType = "application/zip";
+            String url= request->url();
+            url.toLowerCase();
+                 if (url.endsWith(".htm"))   dataType = "text/html";
+            else if (url.endsWith(".html"))  dataType = "text/html";
+            else if (url.endsWith(".css"))   dataType = "text/css";
+            else if (url.endsWith(".js"))    dataType = "application/javascript";
+            else if (url.endsWith(".png"))   dataType = "image/png";
+            else if (url.endsWith(".gif"))   dataType = "image/gif";
+            else if (url.endsWith(".jpg"))   dataType = "image/jpeg";
+            else if (url.endsWith(".bmp"))   dataType = "image/bmp";
+            else if (url.endsWith(".ico"))   dataType = "image/x-icon";
+            else if (url.endsWith(".xml"))   dataType = "text/xml";
+            else if (url.endsWith(".pdf"))   dataType = "application/pdf";
+            else if (url.endsWith(".zip"))   dataType = "application/zip";
 
             // clean up is time out
             for( int f=0;f<(int )(sizeof(DownLoadFiles)/sizeof(DownLoadFiles[0]));f++)
