@@ -276,17 +276,17 @@ const char *password = "Password_Router";
 #endif
 
 #if defined(ESP8266)
-const char *host = "ESP-NAS-12E";
+const char *host = "ESP-NASEX-12E";
 #elif defined(CONFIG_IDF_TARGET_ESP32)
-const char *host = "ESP-NAS-ESP32"; // CONFIG_IDF_TARGET=ESP32
+const char *host = "ESP-NASEX-ESP32"; // CONFIG_IDF_TARGET=ESP32
 #elif defined(CONFIG_IDF_TARGET_ESP32C3)
-const char *host = "ESP-NAS-C3";
+const char *host = "ESP-NASEX-C3";
 #elif defined(CONFIG_IDF_TARGET_ESP32C6)
-const char *host = "ESP-NAS-C6";
+const char *host = "ESP-NASEX-C6";
 #elif defined(CONFIG_IDF_TARGET_ESP32S2)
-const char *host = "ESP-NAS-S2";
+const char *host = "ESP-NASEX-S2";
 #elif defined(CONFIG_IDF_TARGET_ESP32S3)
-const char *host = "ESP-NAS-S3";
+const char *host = "ESP-NASEX-S3";
 #endif
 
 AsyncWebServer server(80); 
@@ -372,8 +372,6 @@ const uint8_t error404_html[] PROGMEM = R"rawliteral(<!DOCTYPE html>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-file_t uploadFile;
-//file_t douwnloadFile;
 sd_t sd;
 
 
@@ -402,13 +400,6 @@ void Log(String Str)
   }
 }
 
-char* mystrcat( char* dest, char* src, char* end )
-{
-     while (*dest && dest<end) dest++;
-     while (*src && dest<end) *dest++ = *src++;
-     *dest=0;
-     return dest;
-}
 #if not defined(ESP8266)
 String reset_reason(int reason)
 {
@@ -466,331 +457,6 @@ String reset_reason(int reason)
 }
 #endif
 
-#ifdef NOT_IN_USE
-void returnOK()
-{
-  server.send(200, "text/plain", "");
-}
-
-void returnFail(String msg)
-{
-  server.send(500, "text/plain", msg + "\r\n");
-}
-
-bool loadFromSdCard(String path)
-{
-  String dataType = "text/plain";
-  if (path.endsWith("/"))
-    path += "index.htm";
-
-  if (path.endsWith(".src"))
-    path = path.substring(0, path.lastIndexOf("."));
-  else if (path.endsWith(".htm"))
-    dataType = "text/html";
-  else if (path.endsWith(".html"))
-    dataType = "text/html";
-  else if (path.endsWith(".css"))
-    dataType = "text/css";
-  else if (path.endsWith(".js"))
-    dataType = "application/javascript";
-  else if (path.endsWith(".png"))
-    dataType = "image/png";
-  else if (path.endsWith(".gif"))
-    dataType = "image/gif";
-  else if (path.endsWith(".jpg"))
-    dataType = "image/jpeg";
-  else if (path.endsWith(".ico"))
-    dataType = "image/x-icon";
-  else if (path.endsWith(".xml"))
-    dataType = "text/xml";
-  else if (path.endsWith(".pdf"))
-    dataType = "application/pdf";
-  else if (path.endsWith(".zip"))
-    dataType = "application/zip";
-
-  file_t dataFile = sd.open(path.c_str());
-  if (dataFile.isDirectory())
-  {
-    path += "/index.htm";
-    dataType = "text/html";
-    dataFile = sd.open(path.c_str());
-  }
-  if (!dataFile)
-    return false;
-  uint64_t filesize = dataFile.size();
-  if (server.hasArg("download"))
-    dataType = "application/octet-stream";
-
-  if (path.endsWith("gz") &&
-      dataType != "application/x-gzip" &&
-      dataType != "application/octet-stream")
-  {
-    server.sendHeader(F("Content-Encoding"), F("gzip"));
-  }
-  // server.sendHeader("Connection","keep-alive",true);
-  // server.sendHeader("Keep-Alive", "timeout=2000");
-  // server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-
-  server.setContentLength(filesize);
-  server.send(200, dataType, "");
-
-  size_t blocksize = 0;
-  char databuffer[1024];
-  while (filesize > 0)
-  {
-    blocksize = dataFile.read(databuffer, sizeof(databuffer));
-    if (blocksize > 0)
-      server.sendContent(databuffer, blocksize);
-    else
-      filesize = 0;
-    if (filesize > blocksize)
-      filesize -= blocksize;
-    else
-      filesize = 0;
-  }
-  #if defined(ESP8266)
-  server.client().flush();
-  #else
-  server.client().clear();
-  #endif
-  dataFile.close();
-  return true;
-}
-
-void handleFileUpload()
-{
-  if (server.uri() != "/edit")
-    return;
-  HTTPUpload &upload = server.upload();
-  if (upload.status == UPLOAD_FILE_START)
-  {
-    if (sd.exists((char *)upload.filename.c_str()))
-      sd.remove((char *)upload.filename.c_str());
-      //EVDL uploadFile = sd.open(upload.filename.c_str(), FILE_WRITE);
-    uploadFile = sd.open(upload.filename.c_str(), O_RDWR  | O_CREAT);
-  }
-  else if (upload.status == UPLOAD_FILE_WRITE)
-  {
-    if (uploadFile)
-      uploadFile.write(upload.buf, upload.currentSize);
-  }
-  else if (upload.status == UPLOAD_FILE_END)
-  {
-    if (uploadFile)
-      uploadFile.close();
-  }
-}
-
-void deleteRecursive(String path)
-{
-
-  file_t file = sd.open((char *)path.c_str());
-  if (!file.isDirectory())
-  {
-    file.close();
-    sd.remove((char *)path.c_str());
-    return;
-  }
-
-  file.rewindDirectory();
-  char PathName[MAX_PATHNAME_SIZE];
-  while (true)
-  {
-    file_t entry = file.openNextFile();
-    if (!entry)
-      break;
-    entry.getName(PathName, sizeof(PathName));
-    String entryPath = path + "/" + (String)PathName;
-    if (entry.isDirectory())
-    {
-      entry.close();
-      deleteRecursive(entryPath);
-    }
-    else
-    {
-      entry.close();
-      sd.remove((char *)entryPath.c_str());
-    }
-    yield();
-  }
-
-  sd.rmdir((char *)path.c_str());
-  file.close();
-}
-
-void handleDelete()
-{
-  if (server.args() == 0)
-    return returnFail("BAD ARGS");
-  String path = server.arg(0);
-  if (path == "/" || !sd.exists((char *)path.c_str()))
-  {
-    returnFail("BAD PATH");
-    return;
-  }
-  deleteRecursive(path);
-  returnOK();
-}
-
-void handleCreate()
-{
-  if (server.args() == 0)
-    return returnFail("BAD ARGS");
-  String path = server.arg(0);
-  if (path == "/" || sd.exists((char *)path.c_str()))
-  {
-    returnFail("BAD PATH");
-    return;
-  }
-
-  if (path.indexOf('.') > 0)
-  {
-    //EVDL file_t file = sd.open((char *)path.c_str(), FILE_WRITE);
-    file_t file = sd.open((char *)path.c_str(), O_RDWR  | O_CREAT);
-    if (file)
-    {
-      file.write("");
-      file.close();
-    }
-  }
-  else
-  {
-    sd.mkdir((char *)path.c_str());
-  }
-  returnOK();
-}
-
-void printDirectory()
-{
-  if (!server.hasArg("dir"))
-    return returnFail("BAD ARGS");
-  String path = server.arg("dir");
-  if (path != "/" && !sd.exists((char *)path.c_str()))
-    return returnFail("BAD PATH");
-  file_t dir = sd.open((char *)path.c_str());
-  path = String();
-  if (!dir.isDirectory())
-  {
-    dir.close();
-    return returnFail("NOT DIR");
-  }
-  dir.rewindDirectory();
-  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-  server.send(200, "text/json", "");
-  WiFiClient client = server.client();
-
-  server.sendContent("[");
-  for (int cnt = 0; true; ++cnt)
-  {
-    file_t entry = dir.openNextFile();
-    char filename[MAX_FILENAME_SIZE];
-    if (!entry)
-      break;
-
-    String output;
-    if (cnt > 0)
-      output = ',';
-
-    output += "{\"type\":\"";
-    output += (entry.isDirectory()) ? "dir" : "file";
-    output += "\",\"name\":\"";
-    entry.getName(filename, sizeof(filename));
-    output += filename ;
-    output += "\"";
-    output += String((entry.isDirectory()) ?"}":",\"size\":\"" + String(entry.size())+"\"}"); 
-    server.sendContent(output);
-    entry.close();
-  }
-  server.sendContent("]");
-  dir.close();
-}
-
-String urlDecode(const String &text)
-{
-  String decoded = "";
-  char temp[] = "0x00";
-  unsigned int len = text.length();
-  unsigned int i = 0;
-  while (i < len)
-  {
-    char decodedChar;
-    char encodedChar = text.charAt(i++);
-    if ((encodedChar == '%') && (i + 1 < len))
-    {
-      temp[2] = text.charAt(i++);
-      temp[3] = text.charAt(i++);
-      decodedChar = strtol(temp, NULL, 16);
-    }
-    else
-    {
-      if (encodedChar == '+')
-      {
-        decodedChar = ' ';
-      }
-      else
-      {
-        decodedChar = encodedChar; // normal ascii char
-      }
-    }
-    decoded += decodedChar;
-  }
-  return decoded;
-}
-
-const char Index_html[] PROGMEM = R"rawliteral(<!DOCTYPE html>
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <title>ESP-SD-FatEx-Web-Server Editor</title>
-    <!--<script src="editor.js" type="text/javascript"></script>-->  
-    <script src="https://emilespecialproducts.github.io/ESP-SD-FatEx-Web-Server/editor.js" type="text/javascript"></script> 
-  </head>
-  <body onload="onBodyLoad();">
-    <div id="uploader"></div>
-    <div id="tree" class="css-tree"></div>
-    <div id="editor"></div>
-    <div id="preview" style="display:none;"></div>
-    <iframe id=download-frame style='display:none;'></iframe>
-  </body>
-</html>
-)rawliteral";
-
-void handleNotFound()
-{
-  if (hasSD && loadFromSdCard(urlDecode(server.uri())))
-    return;
-  if( urlDecode(server.uri()).equals("/index.html") )
-  {
-    server.send_P(200, "text/html", Index_html, sizeof(Index_html)-1);
-    return;
-  }
-  String message="";  
-  if(hasSD == false)
-  {
-    message += "SDCARD Not Detected\n\n";
-    message += "SD_PIN_MISO = " + String(SD_PIN_MISO) + "\n";
-    message += "SD_PIN_MOSI = " + String(SD_PIN_MOSI) + "\n";
-    message += "SD_PIN_SCK = " + String(SD_PIN_SCK) + "\n";
-    message += "SD_PIN_CS = " + String(SD_PIN_CS) + "\n";
-    message += "SPI_CLOCK = " + String(SDmaxSpeed) + " Mhz\n";
-  }
-  message += "File not found on SD card ";
-  message += "URI: ";
-  message += server.uri();
-  message += "\nMethod: ";
-  message += (server.method() == HTTP_GET) ? "GET" : "POST";
-  message += "\nArguments: ";
-  message += server.args();
-  message += "\n";
-  
-  for (uint8_t i = 0; i < server.args(); i++)
-  {
-    message += " NAME:" + server.argName(i) + "\n VALUE:" + server.arg(i) + "\n";
-  }
-  server.send(404, "text/plain", message);
-  DBG_OUTPUT_PORT.print(message);
-}
-#endif 
 
 void setup(void)
 {
@@ -1070,47 +736,80 @@ server.on("/edit", MY_HTTP_POST,
     
     server.onNotFound([](AsyncWebServerRequest *request)
     { 
-      static file_t douwnloadFile; 
-        DBG_OUTPUT_PORT.printf("url NotFound %s , Method =%s\n", request->url().c_str(), request->methodToString());
-        if (request->method() == HTTP_GET)
-        {
-            if (sd.exists(request->url())) 
-            {
+      struct DownLoadFile {file_t File; size_t index;unsigned long time; };
+      static DownLoadFile DownLoadFiles[5];
+       
+      DBG_OUTPUT_PORT.printf("url NotFound %s , Method =%s\n", request->url().c_str(), request->methodToString());
+      if (request->method() == HTTP_GET)
+      {
+          if (sd.exists(request->url())) 
+          {
 #if defined(ESP8266)
                 request->send(SDFS, request->url(), String(), false);
 #else
-              String dataType = "text/plain";
-              if (request->url().endsWith(".htm"))
-                dataType = "text/html";
-              else if (request->url().endsWith(".html"))
-                dataType = "text/html";
-              else if (request->url().endsWith(".css"))
-                dataType = "text/css";
-              else if (request->url().endsWith(".js"))
-                dataType = "application/javascript";
-              else if (request->url().endsWith(".png"))
-                dataType = "image/png";
-              else if (request->url().endsWith(".gif"))
-                dataType = "image/gif";
-              else if (request->url().endsWith(".jpg"))
-                dataType = "image/jpeg";
-              else if (request->url().endsWith(".bmp"))
-                dataType = "image/bmp";
-              else if (request->url().endsWith(".ico"))
-                dataType = "image/x-icon";
-              else if (request->url().endsWith(".xml"))
-                dataType = "text/xml";
-              else if (request->url().endsWith(".pdf"))
-                dataType = "application/pdf";
-              else if (request->url().endsWith(".zip"))
-                dataType = "application/zip";
-            
-            douwnloadFile=sd.open(request->url());
+            String dataType = "text/plain";
+            if (request->url().endsWith(".htm"))        dataType = "text/html";
+            else if (request->url().endsWith(".html"))  dataType = "text/html";
+            else if (request->url().endsWith(".css"))   dataType = "text/css";
+            else if (request->url().endsWith(".js"))    dataType = "application/javascript";
+            else if (request->url().endsWith(".png"))   dataType = "image/png";
+            else if (request->url().endsWith(".gif"))   dataType = "image/gif";
+            else if (request->url().endsWith(".jpg"))   dataType = "image/jpeg";
+            else if (request->url().endsWith(".bmp"))   dataType = "image/bmp";
+            else if (request->url().endsWith(".ico"))   dataType = "image/x-icon";
+            else if (request->url().endsWith(".xml"))   dataType = "text/xml";
+            else if (request->url().endsWith(".pdf"))   dataType = "application/pdf";
+            else if (request->url().endsWith(".zip"))   dataType = "application/zip";
+
+            // clean up
+            for( int f=0;f<sizeof(DownLoadFiles)/sizeof(DownLoadFiles[0]);f++)
+            {
+                if( DownLoadFiles[f].File && DownLoadFiles[f].File.isOpen() && DownLoadFiles[f].time < millis() )
+                {   DownLoadFiles[f].File.close(); 
+                    DownLoadFiles[f].index=0;
+                    //DBG_OUTPUT_PORT.printf("clean up %d timeout\n",f);
+                }  
+            }
+
+            for( int f=0;f<sizeof(DownLoadFiles)/sizeof(DownLoadFiles[0]);f++)
+              {  
+                if(!DownLoadFiles[f].File.isOpen())
+                {
+                  DownLoadFiles[f].File=sd.open(request->url());
+                  DownLoadFiles[f].index=0;
+                  //DBG_OUTPUT_PORT.printf("fileindex %d Created\n",f);
+                  break;
+                }
+              }
+        
             AsyncWebServerResponse *response = request->beginChunkedResponse(dataType, [](uint8_t *buffer, size_t maxLen, size_t index)-> size_t
             {
               int len =0;
-              len=douwnloadFile.read(buffer,maxLen);
-              if( len == 0)  douwnloadFile.close(); 
+              int fileindex=-1;
+              for( int f=0;f<sizeof(DownLoadFiles)/sizeof(DownLoadFiles[0]);f++)
+              {
+                if(DownLoadFiles[f].File && DownLoadFiles[f].File.isOpen() && DownLoadFiles[f].index==index )
+                {
+                  fileindex=f;
+                  //DBG_OUTPUT_PORT.printf("fileindex %d found\n",f);
+                  break;
+                }  
+              }
+              if( fileindex ==-1)
+              { 
+                //DBG_OUTPUT_PORT.printf("fileindex not found index = %d \n",index);
+              } 
+              else
+              { 
+              DownLoadFiles[fileindex].time= millis()+3000;
+              len=DownLoadFiles[fileindex].File.read(buffer,maxLen);
+              DownLoadFiles[fileindex].index=index+len;
+              if( len == 0)  {
+                              DownLoadFiles[fileindex].File.close();
+                              DownLoadFiles[fileindex].index=0;
+                              //DBG_OUTPUT_PORT.printf("fileindex %d Closed\n",fileindex);
+                              } 
+              }
               return len;
             });
             request->send(response);
@@ -1290,7 +989,7 @@ void loop(void)
   ArduinoOTA.handle();
   if (OTAUploadBusy == 0)
   { // Do not do things that take time when OTA is busy
-   // EVDL server.handleClient();
+   
   }
 
   if (PreviousTimeDay != (currentTimeSeconds / (60 * 60 * 24)))
