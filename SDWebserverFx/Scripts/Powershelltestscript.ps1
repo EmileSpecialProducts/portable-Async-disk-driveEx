@@ -21,11 +21,30 @@ Invoke-RestMethod -Uri "$URI/edit?path=/test.txt" -Method put
 "Testing $(get-date) " + [System.Guid]::NewGuid().ToString() > 'test.txt'
 # Upload a file
 ESPSPIFFSuploadfile "$URI/edit" 'test.txt' '/test2.txt'
-
-
 ESPSPIFFSuploadfile "$URI/edit" 'web\Mars.jpg' '/Mars2.jpg'
-Invoke-WebRequest "$URI/Mars2.jpg" -OutFile 'web\Mars3.jpg'
-compare-object (get-content 'web\Mars.jpg') (get-content 'web\Mars3.jpg')
+
+function CompareFiles {
+    param(
+    [string]$Filepath1,
+    [string]$Filepath2
+    )
+    if ((Get-FileHash $Filepath1).Hash -eq (Get-FileHash $Filepath2).Hash) {
+        #Write-Host 'Files Match' -ForegroundColor Green
+        return $true
+    } else {
+        #Write-Host 'Files do not match' -ForegroundColor Red
+        return $false
+    }
+}
+
+$URI = "http://192.168.5.41"
+Invoke-WebRequest "$URI/Mars.jpg" -OutFile 'Mars.jpg'
+for (($i = 0), ($j = 0); $i -lt 100; $i++)
+{
+    Invoke-WebRequest "$URI/Mars.jpg" -OutFile 'Mars3.jpg'
+    if ( CompareFiles 'Mars.jpg' 'Mars3.jpg' ) {Write-Host -NoNewline '#'} else { Write-Host 'Files do not match' -ForegroundColor Red } 
+}
+Write-Host 
 
 Invoke-RestMethod -Uri "$URI/list?dir=/" -Method get
 Invoke-RestMethod -Uri "$URI/edit?path=/Mars2.jpg" -Method delete
