@@ -743,7 +743,7 @@ server.on("/edit", MY_HTTP_POST,
             else if (url.endsWith(".pdf"))   dataType = "application/pdf";
             else if (url.endsWith(".zip"))   dataType = "application/zip";
 
-            // clean up is time out
+            // clean up if time out
             for( int f=0;f<(int )(sizeof(DownLoadFiles)/sizeof(DownLoadFiles[0]));f++)
             {
                 if( DownLoadFiles[f].File && DownLoadFiles[f].File.isOpen() && DownLoadFiles[f].time < millis() )
@@ -773,6 +773,7 @@ server.on("/edit", MY_HTTP_POST,
                 if(DownLoadFiles[f].File && DownLoadFiles[f].File.isOpen() && DownLoadFiles[f].index==index )
                 {
                   fileindex=f;
+                  if(index==0) maxLen-=fileindex;
                   //DBG_OUTPUT_PORT.printf("fileindex %d found\n",f);
                   break;
                 }  
@@ -783,7 +784,6 @@ server.on("/edit", MY_HTTP_POST,
               } 
               else
               { 
-              
               len=DownLoadFiles[fileindex].File.read(buffer,maxLen);
               DownLoadFiles[fileindex].time= millis()+3000; // add 3000 ms for the time out of the connection.
               DownLoadFiles[fileindex].index=index+len;
@@ -1018,6 +1018,18 @@ void loop(void)
     {
       Config_Reset_Counter = 0;
     }
+#endif
+#ifdef MEMORY_DEBUG
+        DBG_OUTPUT_PORT.print( String(ESP.getFreeHeap()) + " bytes available\n"
+         + String(esp_get_free_heap_size())
+         + " byte free heap_size\n"
+         + String(esp_get_free_internal_heap_size())
+         + " byte free internal_heap_size\n"
+         + String(getArduinoLoopTaskStackSize())
+         + " byte ArduinoLoopTaskStackSize\n"
+         + String(ESP.getSketchSize())
+         + " byte getSketchSize\n"
+          );
 #endif
   }
 }
